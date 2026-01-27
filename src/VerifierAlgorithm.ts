@@ -42,7 +42,7 @@ export function toSignatureObject2(signature: string, recoverable = false): ECDS
 
 export function verifyES256(data: string, signature: string, authenticators: VerificationMethod[]): VerificationMethod {
   const hash = sha256(data)
-  const sig = p256.Signature.fromCompact(toSignatureObject2(signature).compact)
+  const sig = toSignatureObject2(signature).compact
   const fullPublicKeys = authenticators.filter((a: VerificationMethod) => !a.ethereumAddress && !a.blockchainAccountId)
 
   const signer: VerificationMethod | undefined = fullPublicKeys.find((pk: VerificationMethod) => {
@@ -64,7 +64,11 @@ export function verifyES256K(
   authenticators: VerificationMethod[]
 ): VerificationMethod {
   const hash = sha256(data)
-  const signatureNormalized = secp256k1.Signature.fromCompact(base64ToBytes(signature)).normalizeS()
+  const signatureBytes = base64ToBytes(signature)
+  if (signatureBytes.length !== 64) {
+    throw new Error(`compactSignature of length 64 expected, got ${signatureBytes.length}`)
+  }
+  const signatureNormalized = secp256k1.Signature.fromCompact(signatureBytes).normalizeS().toBytes()
   const fullPublicKeys = authenticators.filter((a: VerificationMethod) => {
     return !a.ethereumAddress && !a.blockchainAccountId
   })
